@@ -70,29 +70,27 @@ data_sets = load_data()
 
 
 # ConvNet structure
-# 3 stages:
-#  4x17x17 Conv stage
-#  16x9x9  Conv stage
-#  64x5x5  Conv stage
+# 3 layers: 128x3x3, 256x3x3, 512x3x3
 #  Normalize+Summation stage
 
 # Random initialization
-c1 = [np.random.random((3,3)) for i in range(4)]
+c1 = [np.random.random((3,3)) for i in range(2)]
 # Normalization
-for i in range(4):
+for i in range(2):
     c1[i] = c1[i] / sum(sum(c1[i]))
 
-c2 = [np.random.random((9,9)) for i in range(16)]
+c2 = [np.random.random((3,3)) for i in range(256)]
 # Normalization
-for i in range(16):
+for i in range(256):
     c2[i] = c2[i] / sum(sum(c2[i]))
 
-c3 = [np.random.random((5,5)) for i in range(64)]
+c3 = [np.random.random((3,3)) for i in range(512)]
 # Normalization
-for i in range(64):
+for i in range(512):
     c3[i] = c3[i] / sum(sum(c3[i]))
 
 def convolution(image, conv):
+    """Apply a convolution to a single image"""
     # Image is suppose to be an array
     size_image = image.shape
     size_conv = conv.shape
@@ -105,9 +103,21 @@ def convolution(image, conv):
                 for l in range(size_conv[1]):
                     output[i][j] += image[i + k][j + l] * conv[k][l]
     # np.zeros is unfortunatly an array of float64 so we have to convert it
-    # into an uint8 array 
+    # into an uint8 array
     output = output.astype(np.uint8)
     return output
+
+def applyConvolution(inImages, convs):
+    """Apply a list of convolutions to a list of images"""
+    n = len(inImages)
+    size_image = inImages[0].shape
+    size_conv = convs[0].shape
+    outImages = np.zeros((len(inImages), size_image[0]-size_conv[0]+1, size_image[1]-size_conv[1]+1))
+
+    for i in range(n//3):
+        for k in range(3):
+            outImages[i*3+k] = convolution(inImages[i*3+k], convs[i])
+    return outImages
 
 def convertImage(l,w,h):
     data = np.zeros((h, w, 3), dtype=np.uint8)
@@ -123,6 +133,10 @@ print(matrix[:,:,0].shape)
 print(c1[0].shape)
 conv = Image.fromarray(c1[0], 'L')
 conv.save('conv_index.png')
+
+l = [matrix[:,:,0], matrix[:,:,1],matrix[:,:,2],matrix[:,:,0],matrix[:,:,1],matrix[:,:,2]]
+print(l[0])
+print(len(applyConvolution(l, c1)))
 
 img_conv = Image.fromarray(convolution(matrix[:,:,0], c1[0]), 'L');
 img_conv.save('conv.png')
